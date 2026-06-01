@@ -1,0 +1,311 @@
+{
+  "name": "WAHA Absensi Notifications & Daily Recap",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "absen-v2",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "e44c2de2-b251-4043-9828-868c78ffef24",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "webhookId": "absen-v2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.event}}",
+              "value2": "new_attendance"
+            }
+          ]
+        }
+      },
+      "id": "c07e0ca3-e7f0-466d-8a50-6a8ddf6c91a7",
+      "name": "Check Event Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://waha-j3kivpfbozbu.bagus.sumopod.my.id/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "7gc1xoO9YTzddFLB29emlk9zRx4STxEp"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{$json.body.employee.no_hp_notif}}@c.us"
+            },
+            {
+              "name": "text",
+              "value": "=*Notifikasi Kehadiran* 🟢\n\nHalo *{{$json.body.employee.nama}}*,\n\nAbsensi Anda untuk *{{$json.body.attendance.tipe}}* telah berhasil dicatat pada sistem.\n\nWaktu: {{$json.body.attendance.waktu_masuk}}\nKeterlambatan: {{$json.body.attendance.late_minutes}} menit\nLokasi: https://www.google.com/maps?q={{$json.body.attendance.lat}},{{$json.body.attendance.lng}}\nPerusahaan: {{$json.body.company.nama_perusahaan}}\n\n_Terima kasih telah melakukan absensi!_"
+            },
+            {
+              "name": "session",
+              "value": "default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d1f9cc1-f4d1-4273-aa48-3a2512f458e0",
+      "name": "Notif ke User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "3bd42e6d-78ca-4767-9c97-0402ca5d92e5",
+      "name": "Cron Daily Recap",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        600
+      ],
+      "notes": "Runs every day at 18:00 (6 PM) to generate recap"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.absensikita.id/rest/v1/karyawan",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "role",
+              "value": "eq.OWNER"
+            },
+            {
+              "name": "select",
+              "value": "nip,nama,no_hp_notif,company_id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+            }
+          ]
+        },
+        "options": {
+          "splitIntoItems": false
+        }
+      },
+      "id": "18c81da5-2bbf-4d57-8ffb-e8df9abcc8f8",
+      "name": "Get Owner From Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        300,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.absensikita.id/rest/v1/absensi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waktu_masuk",
+              "value": "=gte.{{ DateTime.now().setZone('Asia/Jakarta').startOf('day').toISO() }}"
+            },
+            {
+              "name": "waktu_masuk",
+              "value": "=lte.{{ DateTime.now().setZone('Asia/Jakarta').endOf('day').toISO() }}"
+            },
+            {
+              "name": "select",
+              "value": "id"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+            }
+          ]
+        },
+        "options": {
+          "splitIntoItems": false
+        }
+      },
+      "id": "4c81da5-2bbf-4d57-8ffb-e8df9abcc8f8",
+      "name": "Count Today Attendance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        500,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://waha-j3kivpfbozbu.bagus.sumopod.my.id/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "7gc1xoO9YTzddFLB29emlk9zRx4STxEp"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $('Get Owner From Supabase').item.json[0].no_hp_notif }}@c.us"
+            },
+            {
+              "name": "text",
+              "value": "=*Rekap Absensi Harian* 📅\n\nHari ini ada *{{ $json.length }}* absensi masuk.\nSilakan periksa dashboard absensikita.id untuk rincian lengkapnya."
+            },
+            {
+              "name": "session",
+              "value": "default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa248ba8-6f6f-45a7-96a8-fdb6e11e3bce",
+      "name": "Notif Rekap ke Owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        700,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Event Type": {
+      "main": [
+        [
+          {
+            "node": "Notif ke User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Daily Recap": {
+      "main": [
+        [
+          {
+            "node": "Get Owner From Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Owner From Supabase": {
+      "main": [
+        [
+          {
+            "node": "Count Today Attendance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Today Attendance": {
+      "main": [
+        [
+          {
+            "node": "Notif Rekap ke Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "b6a8-a89e0b8d5a1b-f7ab01f2-1ebd-4bce"
+}

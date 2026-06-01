@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^cdata$ cdata.php [L]
+RewriteRule ^getrequest$ getrequest.php [L]

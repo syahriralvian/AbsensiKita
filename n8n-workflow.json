@@ -1,0 +1,98 @@
+{
+  "name": "Peringatan Masa Aktif",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notify-expiration",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "e44c2de2-b251-4043-9828-868c78ffef24",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "notify-expiration"
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@absensikita.com",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=[PENTING] Sisa Masa Aktif Sistem: {{$json.body.daysRemaining}} Hari",
+        "text": "=Halo Administrator {{$json.body.companyName}},\n\nMasa aktif sistem absensi Cloud untuk perusahaan Anda tersisa {{$json.body.daysRemaining}} hari lagi.\n\nHarap segera melakukan perpanjangan layanan melalui dashboard admin agar sistem tetap dapat digunakan sebelum masa aktif berakhir.\n\nTerima kasih,\nTim Absensiita",
+        "options": {}
+      },
+      "id": "4d7c0ca3-e7f0-466d-8a50-6a8ddf6c91a7",
+      "name": "Kirim Email Notifikasi",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        460,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fonnte.com/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "fQpdzGq5Hwm6iXV2TTha"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "target",
+              "value": "={{ $json.body.whatsapp }}"
+            },
+            {
+              "name": "message",
+              "value": "=*Peringatan Masa Aktif* ⚠️\n\nHalo Administrator *{{$json.body.companyName}}*,\n\nMasa aktif sistem absensi Cloud perusahaan Anda tersisa *{{$json.body.daysRemaining}} hari* lagi. Mohon segera melakukan konfirmasi perpanjangan melalui Dashboard agar layanan tetap aktif.\n\nTerima kasih."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d1f9cc1-f4d1-4273-aa48-3a2512f458e0",
+      "name": "Kirim WA (Fonnte)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        460,
+        420
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Kirim Email Notifikasi",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kirim WA (Fonnte)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "f7ab01f2-1ebd-4bce-b6a8-a89e0b8d5a1b"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "AbsensiKita Cloud",
+  "description": "Sistem absensi wajah modern berbasis AI dengan manajemen staff, dashboard real-time, pelaporan otomatis, dan aturan fleksibel (seperti aturan Setengah Hari).",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
