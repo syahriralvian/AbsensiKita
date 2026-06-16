@@ -4,10 +4,9 @@ export async function syncTime() {
   try {
     const start = Date.now();
     // Use Supabase backend for time to avoid third-party rate limits (like worldtimeapi)
-    const supabaseUrl =
-      import.meta.env.VITE_SUPABASE_URL || "https://api.absensikita.id";
-    const supabaseKey =
-      import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE";
+    const envUrl = (typeof process !== 'undefined' && process?.env?.VITE_SUPABASE_URL) || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || '';
+    const supabaseUrl = envUrl.includes('absensikita.id') ? 'https://urvzweahwbbwvtkyrscd.supabase.co' : (envUrl || 'https://urvzweahwbbwvtkyrscd.supabase.co');
+    const supabaseKey = (typeof process !== 'undefined' && process?.env?.VITE_SUPABASE_ANON_KEY) || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || '';
     const res = await fetch(`${supabaseUrl}/rest/v1/`, {
       method: "HEAD",
       headers: supabaseKey

@@ -18,7 +18,7 @@ export const generateDemoDataIfNeeded = async () => {
     startDate.setHours(0, 0, 0, 0);
 
     if (latestAbsen && latestAbsen.length > 0) {
-      const lastDate = new Date(latestAbsen[0].waktu_masuk.replace(' ', 'T'));
+      const rawVal = latestAbsen[0].waktu_masuk; const lastDate = typeof rawVal === 'string' ? new Date(rawVal.replace(' ', 'T')) : new Date(rawVal);
       startDate = new Date(lastDate);
       startDate.setDate(startDate.getDate() + 1);
       startDate.setHours(0,0,0,0);
@@ -174,7 +174,8 @@ export const generateDemoDataIfNeeded = async () => {
     }
 
     let karyawans = [
-      { nip: 'DEMO-ADMIN', nama: 'Admin Demo', role: 'SUPER ADMIN', deptIdx: 0, admin_permissions: "dashboard,log,karyawan,izin,jam_kerja,jam_break,hari_libur,siklus,departemen,kartu,rekap,total,payroll,maintenance,pengaturan" }
+      { nip: 'DEMO-ADMIN', nama: 'Admin Demo', role: 'SUPER ADMIN', deptIdx: 0, admin_permissions: "dashboard,log,karyawan,izin,jam_kerja,jam_break,hari_libur,siklus,departemen,kartu,rekap,total,payroll,maintenance,pengaturan" },
+      { nip: 'DEMO-BOT', nama: 'Super Smart Bot 🤖', role: 'USER', deptIdx: 0, admin_permissions: "dashboard,chat" }
     ];
     for (let i = 0; i < 100; i++) {
         const baseName = baseNames[i % baseNames.length];

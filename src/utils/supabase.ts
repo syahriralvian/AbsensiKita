@@ -2,8 +2,9 @@
 
 // supabase helper extracted
 export const reqSupabase = async (endpoint: string, method = 'GET', data: any = null) => {
-    const url = process.env.VITE_SUPABASE_URL || "";
-    const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+    const tempUrl = process.env.VITE_SUPABASE_URL || '';
+    const url = tempUrl.includes('absensikita.id') ? 'https://urvzweahwbbwvtkyrscd.supabase.co' : tempUrl;
+    const key = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_tcnnhMaqcBk06ycOngVXBQ_X_QWEffM';
     if (!url || !key) {
       console.warn("Supabase credentials missing in env");
       return null;
@@ -12,7 +13,9 @@ export const reqSupabase = async (endpoint: string, method = 'GET', data: any = 
     const headers: any = {
       'apikey': key,
       'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept-Profile': 'absensikita',
+      'Content-Profile': 'absensikita'
     };
     
     if (method === 'POST' || method === 'PATCH') {

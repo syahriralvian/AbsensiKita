@@ -1,7 +1,20 @@
-export const WAHA_URL = import.meta.env.VITE_WAHA_URL || "https://waha-j3kivpfbozbu.bagus.sumopod.my.id";
-export const WAHA_API_KEY = import.meta.env.VITE_WAHA_API_KEY || "7gc1xoO9YTzddFLB29emlk9zRx4STxEp";
-export const N8N_OTP_URL = import.meta.env.VITE_N8N_WA_OTP_URL || "https://n8n.absensikita.id/webhook/waha-otp-login";
-export const N8N_NOTIFY_URL = import.meta.env.VITE_N8N_NOTIFY_URL || "https://n8n.absensikita.id/webhook/waha-notify-expiration";
+const getEnvVar = (viteKey: string, processKey: string, defaultValue: string) => {
+  if (typeof process !== 'undefined' && process?.env && process.env[processKey]) {
+    return process.env[processKey] as string;
+  }
+  if (typeof process !== 'undefined' && process?.env && process.env[viteKey]) {
+    return process.env[viteKey] as string;
+  }
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[viteKey]) {
+    return import.meta.env[viteKey] as string;
+  }
+  return defaultValue;
+};
+
+export const WAHA_URL = getEnvVar("VITE_WAHA_URL", "WAHA_URL", "https://waha-j3kivpfbozbu.bagus.sumopod.my.id");
+export const WAHA_API_KEY = getEnvVar("VITE_WAHA_API_KEY", "WAHA_API_KEY", "7gc1xoO9YTzddFLB29emlk9zRx4STxEp");
+export const N8N_OTP_URL = getEnvVar("VITE_N8N_WA_OTP_URL", "N8N_WA_OTP_URL", "https://n8n.absensikita.id/webhook/waha-otp-login");
+export const N8N_NOTIFY_URL = getEnvVar("VITE_N8N_NOTIFY_URL", "N8N_NOTIFY_URL", "https://n8n.absensikita.id/webhook/waha-notify-expiration");
 
 export const wahaApi = {
   startSession: async (session: string) => {

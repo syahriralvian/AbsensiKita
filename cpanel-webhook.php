@@ -22,7 +22,7 @@ $payload = file_get_contents('php://input');
 // 3. npm install (jika ada update library)
 // 4. npm run build (untuk re-build react/vite app)
 
-$command = "export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin && cd /home/tugeowfj/public_html && pwd && git status 2>&1 && git pull origin main 2>&1 && npm install 2>&1 && npm run build 2>&1";
+$command = "export PATH=$PATH:/usr/local/bin:/usr/bin:/bin && cd /home/tugeowfj/public_html && pwd && git status 2>&1 && git pull origin main 2>&1 && npm install 2>&1 && npm run build 2>&1 && mkdir -p tmp && touch tmp/restart.txt";
 
 // Cek apakah shell_exec bisa dijalankan
 if (!function_exists('shell_exec')) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   ShieldCheck,
   Zap,
@@ -923,7 +923,4 @@ export default function LandingPage() {
   );
 }
 
-function AnimatePresence({ children }: { children: React.ReactNode }) {
-  const [show, setShow] = useState(true);
-  return <>{show && children}</>;
-}
+

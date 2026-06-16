@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AbsensiKita Cloud</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#1e40af" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <script>
       window.process = { env: {} };
       try {
@@ -15,11 +18,27 @@
           localStorage.setItem('theme', 'light');
         }
       } catch (_) {}
+
+      // Suppress Vite HMR WebSocket benign errors in AI Studio
+      const originalConsoleError = console.error;
+      console.error = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && (args[0].includes('WebSocket closed') || args[0].includes('failed to connect to websocket'))) {
+           return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason === "WebSocket closed without opened." || 
+           (event.reason && typeof event.reason === 'string' && event.reason.includes("WebSocket closed")) ||
+           (event.reason && event.reason.message && event.reason.message.includes("WebSocket closed"))) {
+          event.preventDefault();
+        }
+      });
     </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(r=>{for(let reg of r){reg.unregister();window.location.reload()}})}</script></body>
 </html>
 

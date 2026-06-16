@@ -38,6 +38,7 @@ export default function TagihanTab({ companyId }: TagihanTabProps) {
     "Standart" | "Premium"
   >("Standart");
   const [showInvoice, setShowInvoice] = useState<BillingHistory | null>(null);
+  const [midtransError, setMidtransError] = useState<string | null>(null);
 
   useEffect(() => {
     loadBillingInfo();
@@ -46,11 +47,18 @@ export default function TagihanTab({ companyId }: TagihanTabProps) {
   useEffect(() => {
     // Load Midtrans Snap script dynamically
     fetch("/api/midtrans/config")
-      .then(res => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+           const text = await res.text();
+           throw new Error("Gagal memuat config midtrans (Server " + res.status + ")");
+        }
+        return res.json();
+      })
       .then(config => {
         const clientKey = config.clientKey?.trim();
         if (!clientKey) {
            console.warn("Midtrans Client Key belum di-set di server.");
+           setMidtransError("Client Key Midtrans belum diatur.");
            return;
         }
         
@@ -67,7 +75,10 @@ export default function TagihanTab({ companyId }: TagihanTabProps) {
           document.body.appendChild(script);
         }
       })
-      .catch(err => console.error("Gagal memuat config midtrans:", err));
+      .catch(err => {
+         console.error("Gagal memuat config midtrans:", err);
+         setMidtransError("Gagal terhubung ke server pembayaran. Server backend mungkin sedang down (503).");
+      });
   }, []);
 
   const handlePayment = async () => {
@@ -571,9 +582,18 @@ export default function TagihanTab({ companyId }: TagihanTabProps) {
               </div>
               
               <div className="w-full flex flex-col gap-3 mt-1">
+                {midtransError && (
+                   <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs flex items-start gap-2 border border-red-200 dark:border-red-800/50">
+                      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <div>
+                        <strong>Pembayaran Terganggu</strong><br/>
+                        {midtransError}
+                      </div>
+                   </div>
+                )}
                 <button
                   onClick={handlePayment}
-                  disabled={isProcessingPayment}
+                  disabled={isProcessingPayment || !!midtransError}
                   className="w-full inline-flex items-center justify-center bg-blue-600 text-white font-bold px-6 py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessingPayment ? "Memproses..." : "Bayar Sekarang"}

@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Jakarta');
 // Ganti URL dan KEY di bawah ini dengan Supabase URL & Key proyek Anda
 // Ini penting agar Mesin bisa mengirim data langsung ke Database Supabase Anda.
 $SUPABASE_URL = "https://api.absensikita.id"; 
-$SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE";
+$SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cGFiYXNlLWRlbW8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTU2MTk3MTAwMCwiZXhwIjoyODc3NzMxMDAwfQ.6u7m6FvKexZ8p0O8yZc3p7Bq3v8m_U3P2fW_5Yg1Y6c";
 
 function getClientIP() {
     $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '');

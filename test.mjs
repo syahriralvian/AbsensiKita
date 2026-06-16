@@ -1,0 +1,1 @@
+import http from "http"; setTimeout(()=>{http.get("http://127.0.0.1:8089/api/midtrans/config",(res)=>{let d="";res.on("data",c=>d+=c);res.on("end",()=>console.log("STATUS:",res.statusCode,"BODY:",d))})},1000)

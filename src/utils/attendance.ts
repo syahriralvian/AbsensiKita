@@ -1,4 +1,4 @@
-import { reqSupabase } from "./supabase";
+import { supabase } from "../lib/supabase";
 
 export const processAttendanceRecord = async (cid: string, pinRaw: string, namaRaw: string, timeRaw: string, statusRaw: string | number, photo64: string | null = null) => {
     let tipeAbsen = "MASUK";
@@ -9,13 +9,14 @@ export const processAttendanceRecord = async (cid: string, pinRaw: string, namaR
     let nama = namaRaw;
     const time3 = timeRaw.replace(" ", "T");
     const userDate = new Date(time3);
-    const empResp = await reqSupabase(`/rest/v1/karyawan?company_id=eq.${cid}&nip=eq.${pin}&limit=1`);
+    
+    let { data: empResp } = await supabase.from('karyawan').select('*').eq('company_id', cid).eq('nip', pin).limit(1);
     let emp = empResp && empResp.length > 0 ? empResp[0] : null;
     if (!emp) {
       nama = nama !== "System" && nama ? nama : `Staff ${pin}`;
       const new_emp = { company_id: cid, nip: pin, nama, role: "USER" };
-      await reqSupabase("/rest/v1/karyawan", "POST", new_emp);
-      const newlyCreated = await reqSupabase(`/rest/v1/karyawan?company_id=eq.${cid}&nip=eq.${pin}&limit=1`);
+      await supabase.from('karyawan').insert(new_emp);
+      let { data: newlyCreated } = await supabase.from('karyawan').select('*').eq('company_id', cid).eq('nip', pin).limit(1);
       if (newlyCreated && newlyCreated.length > 0) emp = newlyCreated[0];
     } else {
       nama = nama || emp.nama;
@@ -23,13 +24,13 @@ export const processAttendanceRecord = async (cid: string, pinRaw: string, namaR
     const deptId = emp?.departemen_id || null;
     let calcRule = 1;
     if (deptId) {
-      const deptResp = await reqSupabase(`/rest/v1/departemen?id=eq.${deptId}&limit=1`);
+      const { data: deptResp } = await supabase.from('departemen').select('*').eq('id', deptId).limit(1);
       if (deptResp && deptResp.length > 0 && deptResp[0].calculation_rule) {
         calcRule = deptResp[0].calculation_rule;
       }
     }
     const recentLimit = new Date(userDate.getTime() - 6e4).toISOString();
-    const existResp = await reqSupabase(`/rest/v1/absensi?company_id=eq.${cid}&nip=eq.${pin}&tipe=eq.${tipeAbsen}&waktu_masuk=gte.${recentLimit}&waktu_masuk=lte.${time3}&limit=1`);
+    const { data: existResp } = await supabase.from('absensi').select('*').eq('company_id', cid).eq('nip', pin).eq('tipe', tipeAbsen).gte('waktu_masuk', recentLimit).lte('waktu_masuk', time3).limit(1);
     if (existResp && existResp.length > 0) {
       return;
     }
@@ -48,7 +49,7 @@ export const processAttendanceRecord = async (cid: string, pinRaw: string, namaR
     };
     let lateMinutes = 0;
     if (deptId) {
-      const shiftResp = await reqSupabase(`/rest/v1/shift_schedules?departemen_id=eq.${deptId}`);
+      const { data: shiftResp } = await supabase.from('shift_schedules').select('*').eq('departemen_id', deptId);
       if (shiftResp && shiftResp.length > 0) {
         const shifts = shiftResp;
         const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -74,7 +75,7 @@ export const processAttendanceRecord = async (cid: string, pinRaw: string, namaR
           }
         }
         const dateOnlyStr = time3.substring(0, 10);
-        const todayLogs = await reqSupabase(`/rest/v1/absensi?company_id=eq.${cid}&nip=eq.${pin}&waktu_masuk=gte.${dateOnlyStr}T00:00:00&waktu_masuk=lte.${dateOnlyStr}T23:59:59&select=tipe,waktu_masuk`);
+        const { data: todayLogs } = await supabase.from('absensi').select('tipe,waktu_masuk').eq('company_id', cid).eq('nip', pin).gte('waktu_masuk', dateOnlyStr + 'T00:00:00').lte('waktu_masuk', dateOnlyStr + 'T23:59:59');
         if (tipeAbsen === "MASUK" && (calcRule === 1 || calcRule === 3)) {
           if (todayLogs && todayLogs.length > 0) {
             const hasMasuk = todayLogs.some((l: any) => l.tipe === "MASUK");
@@ -104,5 +105,5 @@ export const processAttendanceRecord = async (cid: string, pinRaw: string, namaR
     if (photo64) {
       data.image = `data:image/jpeg;base64,${photo64}`;
     }
-    await reqSupabase("/rest/v1/absensi", "POST", data);
+    await supabase.from('absensi').insert(data);
   };

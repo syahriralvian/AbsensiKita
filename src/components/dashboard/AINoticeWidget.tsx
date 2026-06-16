@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sparkles, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Attendance, User, Department } from "../../types";
@@ -13,20 +13,34 @@ export default function AINoticeWidget({ attendances, employees, departments }: 
   const [insight, setInsight] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const fetchInProgress = useRef(false);
+  const lastFetchedKey = useRef<string>("");
 
   useEffect(() => {
     // Only analyze if there's enough data and we haven't dismissed it
     if (dismissed || attendances.length === 0 || employees.length === 0) return;
 
+    // Build a unique key based on our dataset to avoid re-fetching the exact same state
+    const currentKey = `${attendances.length}_${employees.length}_${departments.length}`;
+
     // To prevent calling API too frequently, we can cache the result for the session or day
     const cacheKey = `ai_notice_cache`;
     const cached = sessionStorage.getItem(cacheKey);
+    
     if (cached) {
-      setInsight(cached);
+      if (insight !== cached) {
+        setInsight(cached);
+      }
+      return;
+    }
+
+    if (fetchInProgress.current || lastFetchedKey.current === currentKey) {
       return;
     }
 
     const generateInsight = async () => {
+      fetchInProgress.current = true;
+      lastFetchedKey.current = currentKey;
       setLoading(true);
       try {
         // Prepare a summary of data to send to Gemini (to avoid token limits)
@@ -87,11 +101,12 @@ export default function AINoticeWidget({ attendances, employees, departments }: 
         console.error("Failed to generate AI insight", error);
       } finally {
         setLoading(false);
+        fetchInProgress.current = false;
       }
     };
 
     generateInsight();
-  }, [attendances, employees, departments, dismissed]);
+  }, [attendances, employees, departments, dismissed, insight]);
 
   if (dismissed) return null;
 

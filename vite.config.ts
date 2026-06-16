@@ -4,31 +4,34 @@ import {defineConfig, loadEnv} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, '.', '');
+  const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
+        includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
         manifest: {
           name: 'AbsensiKita Cloud',
           short_name: 'AbsensiKita',
-          description: 'Aplikasi Absensi Karyawan',
+          description: 'Aplikasi Absensi Karyawan v2',
+          start_url: '/',
           theme_color: '#1e40af',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: '/favicon.svg',
+              src: '/icon-192.png',
               sizes: '192x192',
-              type: 'image/svg+xml'
+              type: 'image/png',
+              purpose: 'any maskable'
             },
             {
-              src: '/favicon.svg',
+              src: '/icon-512.png',
               sizes: '512x512',
-              type: 'image/svg+xml'
+              type: 'image/png',
+              purpose: 'any maskable'
             }
           ]
         },
@@ -41,7 +44,7 @@ export default defineConfig(({mode}) => {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
     },
     server: {
-      hmr: process.env.DISABLE_HMR !== 'true',
+      hmr: false
     },
     build: {
       outDir: 'dist',

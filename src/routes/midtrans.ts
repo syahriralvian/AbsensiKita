@@ -1,10 +1,19 @@
 import { Request, Response, Router } from "express";
 import * as crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import https from "https";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_tcnnhMaqcBk06ycOngVXBQ_X_QWEffM';
+
+let supabase: any = null;
+try {
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+} catch (e) {
+  console.warn("Could not lazily initialize Supabase in midtrans:", e);
+}
 
 export const midtransRouter = Router();
 
@@ -135,31 +144,47 @@ midtransRouter.post("/api/midtrans/token", async (req: Request, res: Response) =
       }] : undefined
     };
 
-    const midtransRes = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Basic " + authString
-      },
-      body: JSON.stringify(payload)
+    const payloadStr = JSON.stringify(payload);
+
+    return new Promise((resolve, reject) => {
+      const reqMsg = https.request(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Basic " + authString,
+          "Content-Length": Buffer.byteLength(payloadStr)
+        }
+      }, (resp) => {
+        let dataStr = '';
+        resp.on('data', chunk => dataStr += chunk);
+        resp.on('end', () => {
+          if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode >= 300)) {
+            let parsedErr = "Gagal dari Midtrans API.";
+            try {
+                const parsed = JSON.parse(dataStr);
+                if (parsed.error_messages) parsedErr = parsed.error_messages.join(", ");
+            } catch (e) {}
+            return res.status(resp.statusCode).json({ error: `Midtrans: ${parsedErr}` });
+          }
+          
+          try {
+             const data = JSON.parse(dataStr);
+             return res.json({ token: data.token, redirect_url: data.redirect_url });
+          } catch(e) {
+             return res.status(500).json({ error: "Invalid JSON response from Midtrans" });
+          }
+        });
+      });
+
+      reqMsg.on('error', (err) => {
+        console.error("Token request error:", err);
+        return res.status(500).json({ error: err.message || "Internal server error connecting to Midtrans" });
+      });
+
+      reqMsg.write(payloadStr);
+      reqMsg.end();
     });
-
-    if (!midtransRes.ok) {
-       const err = await midtransRes.text();
-       console.error("Midtrans Error:", err, "Payload:", payload);
-       
-       let parsedErr = "Gagal dari Midtrans API.";
-       try {
-           const parsed = JSON.parse(err);
-           if (parsed.error_messages) parsedErr = parsed.error_messages.join(", ");
-       } catch (e) {}
-
-       return res.status(midtransRes.status).json({ error: `Midtrans: ${parsedErr}` });
-    }
-
-    const data = await midtransRes.json();
-    return res.json({ token: data.token, redirect_url: data.redirect_url });
 
   } catch (error: any) {
     console.error("Token error:", error);

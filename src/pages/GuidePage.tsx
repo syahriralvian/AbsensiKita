@@ -1,350 +1,317 @@
-import React, { useRef } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "motion/react";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowLeft, 
-  Printer, 
-  MapPin, 
-  ScanFace, 
-  FileText, 
-  Clock, 
-  Smartphone, 
-  MessageCircle,
-  Users,
-  ShieldCheck,
-  Zap,
-  Building,
-  LayoutDashboard,
-  QrCode,
-  DownloadCloud
-} from "lucide-react";
+  ArrowLeft, ArrowRight, ShieldCheck, Zap, 
+  LayoutDashboard, ScanFace, Check, 
+  MessageCircle, Users
+} from 'lucide-react';
+
+const SWIPE_CONFIDENCE_THRESHOLD = 5000;
+const swipePower = (offset: number, velocity: number) => {
+  return Math.abs(offset) * velocity;
+};
+
+const pages = [
+  // Page 0: Cover
+  (
+    <div className="flex flex-col items-center justify-center p-8 h-full text-center bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg mx-auto mb-8">
+        <ShieldCheck className="w-12 h-12" />
+      </div>
+      <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
+        Buku Panduan
+      </h1>
+      <p className="text-2xl text-blue-600 dark:text-blue-400 font-bold mb-4">
+        Sistem AbsensiKita
+      </p>
+      <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto mb-8 text-lg">
+        Panduan operasional pengguna & petunjuk teknis.
+      </p>
+      <div className="mt-auto animate-pulse flex flex-col items-center gap-2">
+         <span className="text-sm text-slate-400 font-medium tracking-widest uppercase">Geser untuk membuka</span>
+         <ArrowRight className="w-4 h-4 text-slate-300" />
+      </div>
+    </div>
+  ),
+  // Page 1: Pengantar
+  (
+    <div className="p-8 h-full overflow-y-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <Zap className="w-5 h-5" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Gambaran Umum</h2>
+      </div>
+      <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+        <p>
+          Sistem Absensi menggunakan validasi <strong>AI Face Recognition</strong> dan <strong>Geo-Tagging</strong>.
+        </p>
+        <ul className="mt-4 list-none pl-0 space-y-3">
+          <li className="flex items-start gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
+            <span><strong>Dashboard:</strong> Manajemen aktivitas, laporan & shift untuk Admin.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
+            <span><strong>Portal Web:</strong> Absen masuk/pulang lewat kamera smartphone.</span>
+          </li>
+        </ul>
+      </div>
+       <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
+            <div className="flex gap-4 items-end">
+               <div className="w-32 h-24 bg-white dark:bg-slate-900 rounded-t-lg border border-slate-300 dark:border-slate-600 relative flex items-center justify-center shrink-0">
+                  <LayoutDashboard className="w-8 h-8 text-blue-500 opacity-50" />
+                  <div className="absolute -bottom-1.5 w-36 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-b-md -ml-2"></div>
+               </div>
+               <div className="w-12 h-24 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-600 flex items-center justify-center shrink-0">
+                  <ScanFace className="w-6 h-6 text-emerald-500 opacity-50" />
+               </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-4 font-medium italic">PC Dashboard vs Mobile Portal</p>
+       </div>
+    </div>
+  ),
+  // Page 2: Panduan Admin
+  (
+    <div className="p-8 h-full overflow-y-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <LayoutDashboard className="w-5 h-5" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">2. Admin Dashboard</h2>
+      </div>
+      <div className="space-y-6">
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-2">2.1 Pantau Real-Time</h3>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">Lihat aktivitas siapa saja yang masuk, telat, absen atau sedang mengajukan izin hari ini.</p>
+        </div>
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-2">2.2 Input Karyawan & Shift</h3>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">Tambahkan karyawan dari menu dan tetapkan shift mereka agar portal login mereka aktif digunakan.</p>
+        </div>
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+          <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-2">2.3 Verifikasi Wajah</h3>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">Minta karyawan Anda untuk login & merekam bentuk wajah minimal 1 kali di halaman portal mandiri mereka.</p>
+        </div>
+      </div>
+    </div>
+  ),
+  // Page 3: Cara Absen Pegawai
+  (
+    <div className="p-8 h-full overflow-y-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+          <ScanFace className="w-5 h-5" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">3. Cara Absen (Pegawai)</h2>
+      </div>
+      <div className="space-y-4">
+         <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center font-black text-rose-500 text-lg shrink-0">1</div>
+            <div className="mt-1">
+               <h4 className="font-bold text-slate-800 dark:text-slate-200">Buka Portal Karyawan</h4>
+               <p className="text-slate-600 dark:text-slate-400 text-sm">Gunakan browser HP, masukkan NIP beserta dengan kata sandinya.</p>
+            </div>
+         </div>
+         <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center font-black text-rose-500 text-lg shrink-0">2</div>
+            <div className="mt-1">
+               <h4 className="font-bold text-slate-800 dark:text-slate-200">Pindai Wajah</h4>
+               <p className="text-slate-600 dark:text-slate-400 text-sm">Arahkan kamera hingga wajah terlihat jelas. Izinkan Akses GPS ketika ditanyakan.</p>
+            </div>
+         </div>
+         <div className="flex items-start gap-4 pt-2">
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg">
+               <Check className="w-6 h-6" />
+            </div>
+            <div className="mt-1">
+               <h4 className="font-bold text-slate-800 dark:text-slate-200">Tekan Simpan Data</h4>
+               <p className="text-slate-600 dark:text-slate-400 text-sm">Sistem akan segera mencatat presensi.</p>
+            </div>
+         </div>
+      </div>
+    </div>
+  ),
+  // Page 4: Telegram
+  (
+    <div className="p-8 h-full overflow-y-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-sky-100 dark:bg-sky-900/40 text-sky-600 rounded-xl flex items-center justify-center shrink-0">
+          <MessageCircle className="w-5 h-5" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">4. Fitur Telegram Bot</h2>
+      </div>
+      <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Notifikasi instan real-time untuk absen & pengunduhan laporan.</p>
+      
+      <div className="space-y-4">
+         <div className="flex gap-4 items-start bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+            <ShieldCheck className="w-8 h-8 text-blue-500 shrink-0" />
+            <div>
+               <h4 className="font-bold text-sm text-slate-800 dark:text-white">Bagi Administrator</h4>
+               <p className="text-xs text-slate-500 mt-1">Gunakan fitur ini untuk menarik laporan absen ke bentuk Excel, atau monitor keterlambatan harian secara langsung.</p>
+            </div>
+         </div>
+         
+         <div className="flex gap-4 items-start bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+            <Users className="w-8 h-8 text-emerald-500 shrink-0" />
+            <div>
+               <h4 className="font-bold text-sm text-slate-800 dark:text-white">Bagi Karyawan</h4>
+               <p className="text-xs text-slate-500 mt-1">Dapatkan bukti (struk absen) di telegram setiap sukses absen.</p>
+            </div>
+         </div>
+         
+         <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-xl border border-sky-100 dark:border-sky-800/30">
+            <p className="text-xs text-sky-800 dark:text-sky-300 font-medium text-center">
+               Cari <b>@absensikitabot</b> di app Telegram & Hubungkan.
+            </p>
+         </div>
+      </div>
+    </div>
+  ),
+  // Page 5: FAQ & Help
+  (
+    <div className="p-8 h-full overflow-y-auto">
+      <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">5. Solusi Cepat (FAQ)</h2>
+      <div className="space-y-6 text-sm">
+        <div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">Bagaimana jika HP offline / no sinyal?</h4>
+          <p className="text-slate-600 dark:text-slate-400 mt-1 mb-0">Sistem PWA akan menyimpan data absensi Anda kedalam memori cache, dan segera mengirimnya ketika internet tersedia.</p>
+        </div>
+        <div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">Dapatkah karyawan menggunakan fake GPS?</h4>
+          <p className="text-slate-600 dark:text-slate-400 mt-1 mb-0">Tidak, engine kami dibekali pembacaan Mock Location yang memblokir perangkat apabila lokasi dimanipulasi.</p>
+        </div>
+        <div>
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">Kamera error atau tidak mau hidup?</h4>
+          <p className="text-slate-600 dark:text-slate-400 mt-1 mb-0">Rekomendasi gunakan Google Chrome/Safari ter-update.</p>
+        </div>
+      </div>
+      <div className="text-center mt-12 mb-4 text-xs font-medium text-slate-400">
+         Akhir dari Buku Panduan
+      </div>
+    </div>
+  )
+];
+
+const variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0,
+    rotateY: direction > 0 ? -15 : 15,
+    scale: 0.95
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1,
+    rotateY: 0,
+    scale: 1
+  },
+  exit: (direction: number) => ({
+    zIndex: 0,
+    x: direction < 0 ? 300 : -300,
+    opacity: 0,
+    rotateY: direction < 0 ? -15 : 15,
+    scale: 0.95
+  }),
+};
 
 export default function GuidePage() {
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [[page, direction], setPage] = useState([0, 0]);
 
-  const handlePrint = () => {
-    window.print();
+  const paginate = (newDirection: number) => {
+    const nextPage = page + newDirection;
+    if (nextPage >= 0 && nextPage < pages.length) {
+      setPage([nextPage, newDirection]);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Navigation & Controls - Hidden when printing */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 print:hidden">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500 font-medium transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" /> Kembali
-          </Link>
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
-          >
-            <Printer className="w-5 h-5" /> Cetak / Download PDF
-          </button>
-        </div>
-
-        {/* Document Content */}
-        <div 
-          ref={contentRef}
-          className="bg-white dark:bg-slate-950 p-8 sm:p-12 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none print:-m-8 print:p-0"
-        >
-          {/* Cover Page Style Header */}
-          <div className="text-center mb-16 pb-12 border-b border-slate-200 dark:border-slate-800 print:h-[90vh] print:flex print:flex-col print:justify-center">
-            <div className="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg mx-auto mb-8">
-              <ShieldCheck className="w-12 h-12" />
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
-              Buku Panduan Lengkap
-            </h1>
-            <p className="text-2xl text-blue-600 dark:text-blue-400 font-bold mb-4">
-              Sistem Manajemen AbsensiKita
-            </p>
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8 text-lg">
-              Panduan operasional dan petunjuk teknis penggunaan seluruh fitur aplikasi HR & Absensi berbasis AI.
-            </p>
-            <div className="text-sm text-slate-400 font-medium space-y-1 mt-auto">
-              <p>Dokumen Versi: 2.1.0</p>
-              <p>Terakhir Diperbarui: {new Date().toLocaleDateString('id-ID')}</p>
-            </div>
-          </div>
-
-          <div className="print:break-before-page"></div>
-
-          {/* Section 1: Pengantar */}
-          <section className="mb-12 print:break-inside-avoid">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Gambaran Umum Sistem</h2>
-            </div>
-            <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-              <p>
-                <strong>AbsensiKita</strong> merupakan platform modern manajemen kehadiran karyawan yang mengandalkan teknologi <i>Face Recognition</i> (AI), <i>Geo-Tagging</i> Presisi, dan terintegrasi penuh dengan <strong>Telegram Bot</strong>. Sistem terbagi menjadi dua antarmuka utama:
-              </p>
-              <ul className="mt-4 list-disc pl-6 space-y-2">
-                <li><strong>Admin Dashboard:</strong> Panel manajemen (Web) untuk HR / Pemilik Perusahaan guna mengelola data karyawan, shift, rekapan absen, dan statistik.</li>
-                <li><strong>Portal Karyawan:</strong> Antarmuka Web App / Mobile bagi karyawan untuk melakukan absen masuk dan pulang menggunakan kamera smartphone.</li>
-              </ul>
-            </div>
-            
-            {/* Mock Image Representation */}
-            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
-               <div className="flex gap-4 items-end">
-                  {/* Laptop Mockup */}
-                  <div className="w-48 h-32 bg-white dark:bg-slate-900 rounded-t-lg border-4 border-slate-700 dark:border-slate-500 relative flex items-center justify-center">
-                     <LayoutDashboard className="w-8 h-8 text-blue-500 opacity-50" />
-                     <div className="absolute -bottom-2 w-56 h-2 bg-slate-700 dark:bg-slate-500 rounded-b-md -ml-4"></div>
-                  </div>
-                  {/* Phone Mockup */}
-                  <div className="w-16 h-32 bg-white dark:bg-slate-900 rounded-xl border-4 border-slate-700 dark:border-slate-500 relative flex items-center justify-center">
-                     <ScanFace className="w-6 h-6 text-emerald-500 opacity-50" />
-                  </div>
-               </div>
-               <p className="text-xs text-slate-500 mt-4 font-medium italic">Ilustrasi: Akses Admin Dashboard (PC/Laptop) & Portal Karyawan (Smartphone)</p>
-            </div>
-          </section>
-
-          {/* Section 2: Panduan Admin Dashboard */}
-          <section className="mb-12 print:break-before-page">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl flex items-center justify-center">
-                <LayoutDashboard className="w-5 h-5" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">2. Panduan Admin Dashboard</h2>
-            </div>
-
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">2.1. Akses & Login Admin</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Admin dapat mengakses dashboard melalui halaman utama (Landing Page) lalu mengklik tombol <strong>Login</strong>. Masukkan NIP Admin dan Password yang telah didaftarkan.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">2.2. Pemantauan Statistik Real-Time</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Di halaman utama Dashboard, Admin akan melihat statistik harian:
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                   <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                      <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Hadir</div>
-                      <div className="text-2xl font-black text-emerald-600 dark:text-emerald-500">45</div>
-                   </div>
-                   <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
-                      <div className="font-bold text-rose-700 dark:text-rose-400 text-sm">Terlambat</div>
-                      <div className="text-2xl font-black text-rose-600 dark:text-rose-500">3</div>
-                   </div>
-                   <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30">
-                      <div className="font-bold text-amber-700 dark:text-amber-400 text-sm">Izin</div>
-                      <div className="text-2xl font-black text-amber-600 dark:text-amber-500">2</div>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div className="font-bold text-slate-700 dark:text-slate-400 text-sm">Absen</div>
-                      <div className="text-2xl font-black text-slate-600 dark:text-slate-300">5</div>
-                   </div>
-                </div>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Data ini diperbarui secara otomatis setiap kali ada karyawan yang menekan tombol absen dari perangkat mereka. Admin dapat menyetujui (<i>Approve</i>) atau menolak (<i>Reject</i>) apabila foto tidak wajar (misal: kondisi gelap/memakai topeng).
-                </p>
-              </div>
-
-              <div className="print:break-inside-avoid">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">2.3. Manajemen Karyawan & Cetak QR</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Pada menu <strong>Karyawan</strong>, Admin dapat menambah data pegawai baru. Setiap pegawai yang didaftarkan akan otomatis dibuatkan <strong>QR Code Unik</strong>.
-                </p>
-                <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex flex-col sm:flex-row items-center gap-6">
-                   <div className="bg-white p-2 rounded-xl shadow-sm hide-print-bg">
-                      <QrCode className="w-16 h-16 text-slate-800" />
-                   </div>
-                   <div>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200">Fungsi QR Code Karyawan</h4>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                        QR Code ini dicetak dan diberikan ke pegawai. Pegawai dapat melakukan <i>scan</i> QR ini menggunakan HP mereka untuk langsung masuk ke portal absen pribadi mereka tanpa perlu repot mengetik link/URL.
-                      </p>
-                   </div>
-                </div>
-              </div>
-              
-              <div className="print:break-inside-avoid">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">2.4. Rekapitulasi Data & Ekspor Excel</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Admin tidak perlu lagi merekap data kehadiran secara manual. Pada Tab <strong>Laporan</strong>, sistem secara otomatis menghitung Jumlah Jam Kerja, Keterlambatan, dan Akumulasi Potongan. Data dapat diekspor langsung ke spreadsheet format Excel / CSV untuk kebutuhan penggajian bulanan (Payroll).
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 3: Portal Karyawan (Penggunaan Harian) */}
-          <section className="mb-12 print:break-before-page">
-             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">3. Tata Cara Absensi Karyawan</h2>
-            </div>
-            
-            <div className="space-y-6">
-               <p className="text-slate-600 dark:text-slate-400">
-                  Aplikasi didesain sesederhana mungkin agar seluruh pegawai (bahkan yang kurang terbiasa dengan teknologi) dapat melakukan absen dengan mudah setiap harinya.
-               </p>
-
-               <div className="grid sm:grid-cols-2 gap-6 mt-6">
-                  {/* Step 1 */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative">
-                     <div className="absolute -top-4 -left-4 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-xl border-4 border-slate-50 dark:border-slate-950">1</div>
-                     <Smartphone className="w-8 h-8 text-blue-500 mb-4" />
-                     <h4 className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-2">Buka Portal / Scan QR</h4>
-                     <p className="text-slate-600 dark:text-slate-400 text-sm">Pegawai membuka link unik absen pegawai, atau cukup <i>Scan</i> QR Code mereka lewat kamera HP yang akan mengarahkan ke halaman absen pribadi.</p>
-                  </div>
-                  
-                  {/* Step 2 */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative">
-                     <div className="absolute -top-4 -left-4 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-xl border-4 border-slate-50 dark:border-slate-950">2</div>
-                     <ScanFace className="w-8 h-8 text-emerald-500 mb-4" />
-                     <h4 className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-2">Ambil Foto Wajah (Selfie)</h4>
-                     <p className="text-slate-600 dark:text-slate-400 text-sm">Tekan tombol "Absen Masuk". Browser akan meminta izin akses kamera. Izinkan, lalu sejajarkan wajah, dan klik tombol jepret foto.</p>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative">
-                     <div className="absolute -top-4 -left-4 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-xl border-4 border-slate-50 dark:border-slate-950">3</div>
-                     <MapPin className="w-8 h-8 text-rose-500 mb-4" />
-                     <h4 className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-2">Tunggu Deteksi GPS</h4>
-                     <p className="text-slate-600 dark:text-slate-400 text-sm">Sistem akan secara otomatis mencari titik koordinat GPS perangkat. Pastikan GPS HP aktif. Peta kecil akan muncul menunjukkan lokasi presisi.</p>
-                  </div>
-
-                  {/* Step 4 */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative">
-                     <div className="absolute -top-4 -left-4 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-xl border-4 border-slate-50 dark:border-slate-950">4</div>
-                     <ShieldCheck className="w-8 h-8 text-amber-500 mb-4" />
-                     <h4 className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-2">Kirim & Selesai Selesai</h4>
-                     <p className="text-slate-600 dark:text-slate-400 text-sm">Klik Simpan Data. Status akan otomatis berubah menjadi HIJAU (Hadir) untuk hari tersebut. Cepat dan anti antre!</p>
-                  </div>
-               </div>
-            </div>
-          </section>
-
-          {/* Section 4: Telegram Bot Integration */}
-          <section className="mb-12 print:break-before-page">
-             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-sky-100 dark:bg-sky-900/40 text-sky-600 rounded-xl flex items-center justify-center">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">4. Integrasi Telegram Bot Lengkap</h2>
-            </div>
-            
-            <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-               <p>
-                  Sistem AbsensiKita dilengkapi dengan bot cerdas yang dapat diakses langsung melalui aplikasi Telegram. Hal ini memudahkan baik Admin maupun Karyawan memantau aktivitas tanpa harus selalu membuka layar laptop.
-               </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-               {/* Untuk Admin */}
-               <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl">
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                     <ShieldCheck className="w-5 h-5 text-blue-500" /> Bagi Administrator
-                  </h3>
-                  <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                     <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        <span><strong>Notifikasi Instan:</strong> Menerima pesan real-time jika ada karyawan yang masuk, terlambat, atau tidak terverifikasi (jaringan putus).</span>
-                     </li>
-                     <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        <span><strong>Tarik Data Excel:</strong> Command <code>/ekspor_bulanan</code> akan mengirimkan file format `.xlsx` berisi rekap kehadiran penuh bulan ini langsung ke chat.</span>
-                     </li>
-                     <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        <span><strong>Pantau Shift:</strong> Cek ringkasan tim yang aktif bekerja hari ini.</span>
-                     </li>
-                  </ul>
-               </div>
-
-               {/* Untuk Pegawai */}
-               <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl">
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                     <Users className="w-5 h-5 text-emerald-500" /> Bagi Karyawan
-                  </h3>
-                  <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                     <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
-                        <span><strong>Bukti Absensi Harian:</strong> Setelah berhasil absen di Portal Web, Telegram Bot akan otomatis mengirim resi notifikasi ke HP pegawai sebagai bukti.</span>
-                     </li>
-                     <li className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
-                        <span><strong>Riwayat Personal:</strong> Pegawai bisa menarik laporan pribadinya kapan saja agar transparansi dan perhitungan jam lembur/telat jelas.</span>
-                     </li>
-                  </ul>
-               </div>
-            </div>
-
-            <div className="mt-8 flex items-center gap-4 bg-sky-50 dark:bg-sky-900/20 p-5 rounded-2xl border border-sky-100 dark:border-sky-800/30 text-sky-800 dark:text-sky-300">
-               <MessageCircle className="w-8 h-8 shrink-0" />
-               <p className="text-sm">
-                  <strong>Cara Gabung Bot:</strong> Buka Aplikasi Telegram, search <strong>@AbsensiKitaIndo_Bot</strong>. Klik START, lalu klik menu "Hubungkan Akun", Masukkan NIP dan Sandi. Selesai!
-               </p>
-            </div>
-          </section>
-          
-          <div className="print:break-before-page"></div>
-
-          {/* Section 5: FAQ */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">Pertanyaan yang Sering Diajukan (FAQ)</h2>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-200">Bagaimana jika jaringan internet di lokasi kerja buruk?</h4>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">Sistem AbsensiKita dioptimisasi menggunakan PWA, perangkat dapat menyimpan antrean absen offline sementara, lalu mengirimkannya ketika sinyal membaik.</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-200">Apakah karyawan bisa menduplikasi atau memanipulasi koordinat GPS?</h4>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">Sistem kami dibangun diatas framework modern yang memblokir modul manipulasi lokasi eksternal / <i>Mock Location / Fake GPS</i> di browser.</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-800 dark:text-slate-200">Bagaimana jika HP karyawan tidak mendukung browser terbaru?</h4>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">Sistem kami mendukung luas hingga browser versi lawas (Android 6+ atau iOS 12+). Pastikan memberikan izin Kamera dari pengaturan peramban seperti Google Chrome atau Safari.</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Footer note */}
-          <div className="text-center pt-8 mt-12 border-t border-slate-200 dark:border-slate-800 print:break-inside-avoid">
-            <p className="text-slate-500 dark:text-slate-400 italic">
-               Terima kasih telah mempercayai AbsensiKita sebagai solusi manajemen tim Anda. 
-               Jika membutuhkan bantuan lebih lanjut, hubungi layanan dukungan kami dari panel Dashboard Administrator.
-            </p>
-          </div>
-        </div>
+    <div className="min-h-[100dvh] bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 flex flex-col pt-safe font-sans">
+      {/* Top Header */}
+      <div className="w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 shrink-0 flex items-center justify-between shadow-sm">
+         <Link to="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
+            <ArrowLeft className="w-5 h-5" /> 
+            <span className="font-bold">Kembali</span>
+         </Link>
+         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                Hal {page + 1}/{pages.length}
+            </span>
+         </div>
       </div>
-      
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body { 
-             background-color: white !important; 
-             -webkit-print-color-adjust: exact !important; 
-             print-color-adjust: exact !important;
-          }
-          .print\\:hidden { display: none !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:border-none { border: none !important; }
-          .hide-print-bg { background: transparent !important; }
-          /* Enforce background colors for printing */
-          .bg-blue-600 { background-color: #2563eb !important; color: white !important;}
-          .bg-emerald-50 { background-color: #ecfdf5 !important; }
-          .bg-rose-50 { background-color: #fff1f2 !important; }
-          .bg-amber-50 { background-color: #fffbeb !important; }
-          .bg-slate-50 { background-color: #f8fafc !important; }
-          .bg-sky-50 { background-color: #f0f9ff !important; }
-        }
-      `}</style>
+
+      {/* Swipeable Book Area */}
+      <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+         <div 
+           className="relative w-full max-w-sm aspect-[4/5] sm:aspect-[3/4] bg-transparent perspective-[1500px]"
+         >
+            <AnimatePresence initial={false} custom={direction}>
+               <motion.div
+                 key={page}
+                 custom={direction}
+                 variants={variants}
+                 initial="enter"
+                 animate="center"
+                 exit="exit"
+                 transition={{
+                   x: { type: "spring", stiffness: 300, damping: 30 },
+                   opacity: { duration: 0.2 },
+                   rotateY: { type: "spring", stiffness: 200, damping: 30 }
+                 }}
+                 drag="x"
+                 dragConstraints={{ left: 0, right: 0 }}
+                 dragElastic={0.8}
+                 onDragEnd={(e, { offset, velocity }) => {
+                   const swipe = swipePower(offset.x, velocity.x);
+                   if (swipe < -SWIPE_CONFIDENCE_THRESHOLD) {
+                     paginate(1);
+                   } else if (swipe > SWIPE_CONFIDENCE_THRESHOLD) {
+                     paginate(-1);
+                   }
+                 }}
+                 className="absolute inset-0 w-full h-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden cursor-grab active:cursor-grabbing transform-gpu"
+                 style={{ backfaceVisibility: "hidden" }}
+               >
+                 {pages[page]}
+               </motion.div>
+            </AnimatePresence>
+         </div>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="pb-8 pt-2 px-4 flex flex-col items-center justify-center shrink-0">
+         <div className="flex items-center gap-8 mb-6">
+            <button
+               onClick={() => paginate(-1)}
+               disabled={page === 0}
+               className="w-14 h-14 rounded-full flex items-center justify-center bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 disabled:opacity-40 transition-all active:scale-95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+               <ArrowLeft className="w-6 h-6 ml-[-2px]" />
+            </button>
+            
+            <div className="flex gap-2">
+               {pages.map((_, i) => (
+                  <div 
+                     key={i} 
+                     className={`h-2.5 rounded-full transition-all ${i === page ? 'w-8 bg-blue-600' : 'w-2.5 bg-slate-300 dark:bg-slate-700 cursor-pointer hover:bg-slate-400'}`} 
+                     onClick={() => {
+                        if (i !== page) setPage([i, i > page ? 1 : -1])
+                     }} 
+                  />
+               ))}
+            </div>
+
+            <button
+               onClick={() => paginate(1)}
+               disabled={page === pages.length - 1}
+               className="w-14 h-14 rounded-full flex items-center justify-center bg-blue-600 text-white shadow-md shadow-blue-500/30 disabled:opacity-40 transition-all active:scale-95 hover:bg-blue-700"
+            >
+               <ArrowRight className="w-6 h-6 mr-[-2px]" />
+            </button>
+         </div>
+      </div>
     </div>
   );
 }
-
